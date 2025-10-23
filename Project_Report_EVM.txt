@@ -1,0 +1,386 @@
+Electronic Voting Machine with Fingerprint Authentication (EVM)
+Embedded Systems Laboratory Project Report
+
+Authors:
+- Md. Nafiz Ahmed (Roll: 21007001)
+- Oitijya Islam Auvro (Roll: 2107024)
+
+Institution/Course: Embedded Systems Laboratory
+Date: 21 October 2025
+
+
+Table of Contents
+1. Objectives
+2. Introduction
+3. Required Components
+   3.1 Hardware
+   3.2 Software
+4. Project Overview and Architecture
+   4.1 System Block Diagram
+   4.2 Data Flow and Control Flow
+   4.3 Software Modules
+5. Methodology and Implementation Details
+   5.1 Arduino Firmware (Fingerprint Sensor Interface)
+   5.2 Raspberry Pi – Finger Enrollment & Administration (finger3.py)
+   5.3 Raspberry Pi – Voting Application with GUI (voting5.py)
+   5.4 Firebase Realtime Database Data Model
+   5.5 Website (IoT Dashboard) for Real-time Results
+6. Circuit Diagram and Wiring Details
+7. Pseudo Code
+   7.1 Arduino (embedded.ino)
+   7.2 Raspberry Pi Enrollment/Admin (finger3.py)
+   7.3 Raspberry Pi Voting App (voting5.py)
+   7.4 Voting Website Service (firebase.js)
+8. Results and Observations
+   8.1 Functional Demonstrations
+   8.2 Example Logs and Database Entries
+   8.3 Performance, Latency, and Reliability
+9. Testing and Validation
+10. Work Division
+11. Discussion
+   11.1 Security and Privacy Considerations
+   11.2 Limitations
+   11.3 Future Improvements
+12. Conclusion
+13. References
+
+
+1. Objectives
+- Design and implement an Electronic Voting Machine (EVM) that authenticates voters using a fingerprint sensor.
+- Build an embedded system solution combining Arduino (fingerprint sensing) and Raspberry Pi (orchestration, GUI, and networking).
+- Store registered voters and vote records in a cloud-hosted database (Firebase Realtime Database) securely and reliably.
+- Provide a touchscreen-friendly voting interface with physical buttons and buzzer feedback.
+- Prevent double voting by checking previous vote records for each verified voter ID.
+- Present live results through a web-based dashboard (IoT website) that fetches real-time data from Firebase.
+- Demonstrate an end-to-end solution: enrollment → authentication → vote casting → live visualization.
+
+
+2. Introduction
+Electronic voting aims to streamline the voting process, minimize errors, and provide rapid result aggregation while maintaining integrity and ease of use. Fingerprint authentication offers a natural and non-intrusive method for verifying voter identity, reducing the possibility of impersonation.
+
+This project integrates:
+- An Arduino board coupled with an FPM10A fingerprint sensor to perform image capture, template creation, matching, and ID management, and to expose a simple serial command interface (CHECK and ENROLL). 
+- A Raspberry Pi as the central controller to coordinate authentication, display the GUI for voting, manage GPIO inputs (hardware buttons) and feedback (buzzer), and handle network communication with Firebase.
+- A Firebase Realtime Database to store registered voters (ID → name) and votes (candidate, voter_id, timestamp) in real time.
+- A modern web frontend (React + Vite) to present live statistics, vote counts, and status dashboards by reading from Firebase over REST APIs.
+
+The combination of embedded hardware and cloud services demonstrates how IoT, edge devices, and web technologies can be composed to build a robust, auditable voting pipeline.
+
+
+3. Required Components
+3.1 Hardware
+- Arduino (e.g., Arduino Uno/Nano): Acts as the dedicated fingerprint processing unit and gateway for the sensor. 
+- Raspberry Pi (with Wi‑Fi/Ethernet): Orchestrates enrollment/voting, drives the GUI, interfaces with GPIO, and communicates with Firebase.
+- 5-inch HDMI Display (touch preferred): Primary visual interface for voters to view instructions, candidates, and confirmations.
+- FPM10A Fingerprint Reader: Optical sensor for capturing and matching fingerprints; supported by Adafruit_Fingerprint library.
+- Breadboard: Prototyping the wiring for buttons, buzzer, and sensor connections as needed.
+- Jumper Wires: For connections between components (signal and power).
+- Buzzer: Provides audible feedback (e.g., double buzz for duplicate voting attempt).
+- Push Buttons (3× for candidates; optionally more): Physical input method to cast votes corresponding to each candidate.
+
+3.2 Software
+- Arduino IDE (with Adafruit Fingerprint library): To program Arduino (embedded.ino) and manage the FPM10A sensor.
+- Raspberry Pi OS (Linux), Python 3.x: Runs the enrollment/admin script (finger3.py) and GUI voting app (voting5.py).
+- Python Libraries: 
+  - pyserial (serial), requests, gpiozero, Pillow (PIL), Tkinter (standard GUI), time, datetime.
+- Firebase Realtime Database: Cloud backend for voters and votes; accessed via REST endpoints.
+- Node.js + Vite + React: For the voting-website dashboard (front-end UI). Optional charting lib (e.g., Recharts) for analytics.
+
+
+4. Project Overview and Architecture
+The project separates concerns: the Arduino abstracts the sensor’s low-level workflow and exposes a clear serial protocol; the Raspberry Pi manages UX, business logic, and data persistence; Firebase persists results and enables live visualization on the web.
+
+4.1 System Block Diagram (Textual)
+
+[ Fingerprint Sensor (FPM10A) ]
+          │ (UART @ 57600 via SoftwareSerial)
+          ▼
+      Arduino (embedded.ino)
+          │ (USB Serial @ 9600)
+          ▼
+     Raspberry Pi (Python)
+   ┌────────────┬───────────────┬─────────────┐
+   │ GPIO Input │   GUI Output  │   Network   │
+   │ (Buttons)  │ (5" HDMI Disp)│ (REST to FB)│
+   └────────────┴───────────────┴─────────────┘
+          │                              
+          ▼                              
+     Buzzer (GPIO)                Firebase Realtime DB
+                                          │
+                                          ▼
+                                 Voting Website (React)
+
+4.2 Data Flow and Control Flow
+- Enrollment:
+  1) Admin uses finger3.py on Raspberry Pi.
+  2) finger3.py sends ENROLL:<ID> over serial to Arduino.
+  3) Arduino guides a two-stage capture and model creation (image → template1 → image → template2 → createModel → storeModel).
+  4) On success, finger3.py saves {id → name} into Firebase under /voters/{id}.
+
+- Voting:
+  1) voting5.py GUI prompts for fingerprint.
+  2) Sends CHECK to Arduino; Arduino returns MATCH:<id> or NO_MATCH.
+  3) If MATCH, voting5.py checks Firebase /votes to prevent double voting.
+  4) If eligible, GUI displays candidates; user presses physical button; vote recorded locally (CSV) and pushed to Firebase /votes.
+  5) Website reads voters/votes to render live dashboards.
+
+4.3 Software Modules
+- Arduino (embedded.ino): Serial command interpreter; fingerprint capture/matching; enrollment pipeline.
+- finger3.py: Admin console for enrollment and data reset; writes to Firebase voters and deletes voters/votes.
+- voting5.py: Tkinter GUI for voting; button handling via gpiozero; Firebase read/write; buzzer notifications.
+- voting-website: React app that fetches from Firebase over REST to display dashboards, vote counts, and statistics.
+
+
+5. Methodology and Implementation Details
+
+5.1 Arduino Firmware (Fingerprint Sensor Interface)
+- Libraries: Adafruit_Fingerprint.h with SoftwareSerial(2,3) for FPM10A.
+- Baud Rates: 57600 (sensor) and 9600 (USB serial to Raspberry Pi).
+- Initialization: verifyPassword() → prints FINGERPRINT_READY or FINGERPRINT_ERROR.
+- Commands over Serial from Raspberry Pi: 
+  - CHECK → getFingerprintID(): getImage → image2Tz → fingerFastSearch; returns MATCH:<id> or NO_MATCH.
+  - ENROLL:<id> → enrollFingerprint(id): two captures to templates, createModel, storeModel(id); prints success/failure states.
+- Robustness: Prints clear error messages (e.g., packet receive error, imaging error, invalid ID).
+
+5.2 Raspberry Pi – Finger Enrollment & Administration (finger3.py)
+- Serial: /dev/ttyACM0 @ 9600, blocking on readiness messages.
+- Firebase REST: FIREBASE_URL with /voters and /votes nodes. 
+- Features:
+  - Save voter: PUT /voters/{fid}.json → { name }.
+  - Delete all: DELETE /voters.json and /votes.json (admin reset).
+  - Console UI: Accepts commands: (Enter) to CHECK; ENROLL:<ID>; DELETE_ALL; exit.
+- Flow: 
+  - ENROLL triggers Arduino enrollment; on success, finger3.py persists the name to Firebase.
+  - DELETE_ALL triggers Arduino to wipe sensor templates (expected ALL_DELETED), then clears Firebase nodes.
+
+5.3 Raspberry Pi – Voting Application with GUI (voting5.py)
+- Tkinter GUI: Full-screen-like window tailored for a 5" display; large text; clear user flow.
+- GPIO: gpiozero Buttons bound to BCM GPIOs 17,27,22 for three candidates; Buzzer on GPIO 18 for audible feedback.
+- Firebase Interactions: 
+  - get_voter_name(id): GET /voters/{id}.json
+  - has_already_voted(id): GET /votes.json then scan for voter_id match.
+  - push_vote(candidate, id): POST /votes.json with candidate, voter_id, timestamp (UTC).
+- Anti-Double-Voting: If has_already_voted returns True, show warning screen and buzz twice.
+- UX Flow: Fingerprint recognized → “recognized” screen → candidates screen → record vote (CSV + Firebase) → thank you screen → back to fingerprint screen.
+
+5.4 Firebase Realtime Database Data Model
+- /voters/{id}: { name: "..." }
+- /votes/{autoKey}: { candidate: "Alice|Bob|Charlie", voter_id: "<id>", timestamp: "ISO-UTC" }
+- Accessed via REST endpoints: 
+  - GET https://<db>/voters.json 
+  - GET https://<db>/votes.json 
+  - PUT https://<db>/voters/{id}.json 
+  - POST https://<db>/votes.json
+
+5.5 Website (IoT Dashboard) for Real-time Results
+- Frontend: React + Vite. 
+- Service (firebase.js): Uses fetch() to read /voters.json and /votes.json, transforms objects to arrays, computes statistics (counts, turnout), and feeds the dashboard pages (Dashboard, VoterList, VoteCount, VoteStatistics).
+- Displayed Metrics: Total voters, total votes, per-candidate vote counts, and trends over time.
+
+
+6. Circuit Diagram and Wiring Details
+This section describes connections textually. Actual schematics can be derived from these mappings.
+
+- Fingerprint Sensor (FPM10A) → Arduino:
+  - Sensor TX → Arduino Pin 2 (SoftwareSerial RX)
+  - Sensor RX → Arduino Pin 3 (SoftwareSerial TX)
+  - Sensor VCC → 5V (or as specified by sensor module)
+  - Sensor GND → GND
+  - Sensor’s internal interface runs at 57600 baud as set by Adafruit library.
+
+- Arduino → Raspberry Pi:
+  - Arduino USB cable to Raspberry Pi USB port.
+  - Serial device appears as /dev/ttyACM0 on Raspberry Pi; 9600 baud.
+
+- Raspberry Pi GPIO:
+  - Buttons (pull-up enabled in code by gpiozero):
+    - Candidate 1 (Alice): GPIO 17 → one side of button (other side to GND)
+    - Candidate 2 (Bob):   GPIO 27 → one side of button (other side to GND)
+    - Candidate 3 (Charlie): GPIO 22 → one side of button (other side to GND)
+  - Buzzer: GPIO 18 → Buzzer (+) with suitable series resistor if required; Buzzer (–) to GND. Use transistor/driver if current exceeds GPIO limits.
+  - Display: 5" HDMI display connected via HDMI (touch USB if available).
+
+- Power Considerations:
+  - Ensure the sensor and display have stable power.
+  - Prefer dedicated 5V supply for Raspberry Pi; avoid undervoltage.
+
+ASCII Overview:
+
+[FPM10A] --TX--> [D2 Arduino]        [Raspberry Pi]
+[FPM10A] --RX<-- [D3 Arduino]         ├─ GPIO17 → Button(Alice) → GND
+[FPM10A] --VCC-- 5V                   ├─ GPIO27 → Button(Bob)   → GND
+[FPM10A] --GND-- GND                  ├─ GPIO22 → Button(Charlie)→ GND
+                                      └─ GPIO18 → Buzzer (+), (–)→ GND
+Arduino USB ↔ Raspberry Pi USB (/dev/ttyACM0)
+Raspberry Pi HDMI ↔ 5" Display
+
+
+7. Pseudo Code
+7.1 Arduino (embedded.ino)
+- setup():
+  - Serial.begin(9600)
+  - finger.begin(57600)
+  - if finger.verifyPassword(): print "FINGERPRINT_READY" else print "FINGERPRINT_ERROR"
+- loop():
+  - if Serial.available():
+    - read command line
+    - if command == "CHECK":
+      - if fingerFastSearch succeeds: print "MATCH:<id>" else "NO_MATCH"
+    - else if command startsWith "ENROLL:":
+      - parse id; if valid, run enrollFingerprint(id); else print error
+- enrollFingerprint(id):
+  - capture image until FINGERPRINT_OK
+  - image2Tz(1); prompt to remove and place again; image2Tz(2)
+  - createModel(); storeModel(id)
+  - print success/failure messages
+
+7.2 Raspberry Pi Enrollment/Admin (finger3.py)
+- Open serial /dev/ttyACM0 @ 9600
+- Wait for "FINGERPRINT_READY" from Arduino
+- Loop:
+  - Read user input:
+    - "" (Enter): send "CHECK\n"; read and display MATCH/NO_MATCH
+    - "ENROLL:<ID>":
+      - prompt for name; send "ENROLL:<ID>\n"
+      - read Arduino messages for up to 30s; if "Enrollment successful", PUT {name} to /voters/<ID>.json
+    - "DELETE_ALL":
+      - send "DELETE_ALL\n" to Arduino; if Arduino replies "ALL_DELETED", DELETE /voters.json and /votes.json
+    - "exit": break
+
+7.3 Raspberry Pi Voting App (voting5.py)
+- Open serial /dev/ttyACM0; wait for READY
+- Setup Tkinter UI and gpiozero buttons; buzzer on GPIO18
+- show_fingerprint_screen(): display instructions, then call wait_for_fingerprint()
+- wait_for_fingerprint():
+  - send "CHECK\n"; read lines until MATCH:<id> or NO_MATCH
+  - if MATCH:
+    - get name from /voters/<id>.json; if has_already_voted(id): buzz twice and show already-voted screen; else recognize screen then candidates screen
+- candidates screen:
+  - display three candidate cards and watch buttons
+  - on button press: write to votes.csv and POST /votes.json {candidate, voter_id, timestamp}; show thank you screen; return to fingerprint screen
+
+7.4 Voting Website Service (firebase.js)
+- const FIREBASE_URL = "https://<db>"
+- getVoters(): fetch /voters.json; normalize to array of {id,name}
+- getVotes(): fetch /votes.json; normalize to array of {id,candidate,timestamp,voter_id}
+- getVotersWithStatus(): merge voters with vote info to tag hasVoted and votedAt
+- getVoteCounts(): count votes per candidate; compute percentages
+- getDashboardStats(): compute totals and turnout
+
+
+8. Results and Observations
+8.1 Functional Demonstrations
+- Enrollment: New voter added via finger3.py → Arduino completes two-step capture → Firebase updated with name under /voters/<id>.
+- Authentication: From voting5.py, CHECK returns MATCH:<id> for registered fingerprints; unknown prints NO_MATCH.
+- Double-vote Prevention: voting5.py scans /votes for voter_id before allowing a new vote; on repeat, shows warning and buzzes twice.
+- Vote Casting: User presses physical button; app logs to votes.csv and POSTs to Firebase /votes; thank-you message displayed.
+- Live Dashboard: Website fetches voters/votes and visualizes totals and per-candidate counts.
+
+8.2 Example Logs and Database Entries
+- Arduino on startup: "FINGERPRINT_READY".
+- Enrollment: "Enrollment successful! Stored at ID 6" → finger3.py prints "✅ Voter saved to Firebase: ID=6, Name=AUVRO".
+- Voting match: "MATCH:5" → GUI reads voter name → records vote.
+- Firebase JSON (illustrative):
+  - /voters: { "5": {"name":"NAFIZ"}, "6": {"name":"AUVRO"} }
+  - /votes: { "-ObMq8...": {"candidate":"Alice","timestamp":"2025-10-12T10:22:15.379101","voter_id":"5"} }
+
+8.3 Performance, Latency, and Reliability
+- Fingerprint matching latency: typically < 1 s per attempt after CHECK.
+- Network latency to Firebase: sub-second to a few seconds depending on connectivity; UI remains responsive.
+- Reliability considerations: Power stability for Pi and sensor is critical; debounce (bounce_time=0.2) used for buttons.
+
+
+9. Testing and Validation
+Test Cases:
+- T1 Enrollment Valid: Enroll ID=5, name="NAFIZ" → success prints and voter appears in Firebase.
+- T2 Enrollment Invalid ID: ENROLL:abc → finger3.py rejects with "Invalid ID".
+- T3 Fingerprint Unknown: CHECK with unregistered finger → NO_MATCH loops until a match.
+- T4 Double-vote Block: Voter 5 votes once → second attempt triggers already-voted screen and double buzz.
+- T5 Network Failure: Simulate Firebase unreachable → voting5.py logs errors, keeps UI flow; retry allowed.
+- T6 Button Debounce: Rapid presses do not cause multiple votes thanks to bounce_time and state handling.
+- T7 Delete All: DELETE_ALL → Arduino clears templates; finger3.py deletes /voters and /votes.
+
+Validation:
+- Manual end-to-end runs across multiple voters & candidates.
+- Cross-check local votes.csv with Firebase entries for consistency.
+- Website displays equal totals to Firebase counts.
+
+
+10. Work Division
+- Md. Nafiz Ahmed (Roll: 21007001):
+  - Raspberry Pi applications (finger3.py admin tool, voting5.py GUI), Firebase integration, system orchestration, test automation, documentation.
+- Oitijya Islam Auvro (Roll: 2107024):
+  - Arduino firmware (embedded.ino), fingerprint sensor integration and tuning, GPIO wiring & hardware assembly, website integration, testing and demo.
+
+
+11. Discussion
+11.1 Security and Privacy Considerations
+- Database Rules: While the Firebase URL is public, write access must be restricted; production deployments should require authenticated writes (e.g., via Admin SDK or Auth-based rules). Avoid public write permissions.
+- Data Minimization: Only store voter ID and minimal metadata (name); no raw fingerprint images/templates are stored in Firebase; templates remain in the sensor’s protected storage.
+- Double-vote Logic: Implemented at application level by scanning /votes; consider server-side checks or security rules to enforce constraints.
+- Local CSV: votes.csv is useful for offline auditing but can contain sensitive personal data; handle with care and avoid publishing real names publicly.
+
+11.2 Limitations
+- Concurrency: Two separate scripts cannot safely access the same serial port simultaneously; a unified service or inter-process lock is needed.
+- Offline Operation: Current setup depends on internet for Firebase. Graceful caching and later synchronization could improve resilience.
+- UI/UX: Basic Tkinter UI is functional but could be optimized for accessibility and localization.
+- Fingerprint Sensor Throughput: FPM10A works well for small queues; high-traffic scenarios need throughput analysis or more sensors.
+
+11.3 Future Improvements
+- Unified Daemon: Merge enrollment and voting into one service with proper locking and role-based access (admin vs. operator), or add IPC between processes.
+- Stronger Server-side Enforcement: Move double-vote rule into Firebase security rules or a backend service using Firebase Admin SDK.
+- Audit and Analytics: Expand website to show time-series graphs, error rates, and device health checks.
+- Hardening: Add watchdogs, logging to systemd/journald, and backup storage.
+- UI Enhancements: Touch-friendly buttons, accessibility features, multilingual support, candidate photos served from a secure asset store.
+
+
+12. Conclusion
+This project successfully demonstrates an embedded Electronic Voting Machine that integrates biometric authentication, a user-friendly voting interface, and cloud-based result aggregation. The Arduino-controlled fingerprint sensor provides reliable identification; the Raspberry Pi coordinates the workflow, prevents double voting, and records votes; Firebase enables real-time dashboards for transparency. The implementation balances simplicity with functionality and highlights the importance of security rules, data privacy, and robust wiring/power practices. The architecture is modular and readily extensible for future enhancements or deployments at scale.
+
+
+13. References
+- Adafruit Fingerprint Sensor Library and Guides:
+  - https://github.com/adafruit/Adafruit-Fingerprint-Sensor-Library
+  - https://learn.adafruit.com/adafruit-optical-fingerprint-sensor
+- Firebase Realtime Database REST API:
+  - https://firebase.google.com/docs/database/rest/start
+- Raspberry Pi GPIO & gpiozero:
+  - https://gpiozero.readthedocs.io/
+- Tkinter GUI Programming:
+  - https://docs.python.org/3/library/tkinter.html
+- Python requests:
+  - https://requests.readthedocs.io/
+- React and Vite:
+  - https://react.dev/
+  - https://vitejs.dev/
+- Realtime Visualization (example charts library):
+  - https://recharts.org/
+
+
+Appendix A – Example Serial Interaction (Illustrative)
+- On Raspberry Pi, finger3.py (admin):
+  > ENROLL:6
+  Arduino → Image taken
+  Arduino → Second image taken
+  Arduino → Enrollment successful! Stored at ID 6
+  finger3.py → ✅ Voter saved to Firebase: ID=6, Name=AUVRO
+
+- On Raspberry Pi, voting5.py:
+  Arduino → MATCH:5
+  GUI → Recognized voter: NAZIF (example)
+  GUI → Vote recorded for Alice; pushed to Firebase; Thank you screen.
+
+Appendix B – Sample Firebase Structure (Illustrative)
+{
+  "voters": {
+    "5": { "name": "NAFIZ" },
+    "6": { "name": "AUVRO" }
+  },
+  "votes": {
+    "-ObMwIyevpQ7hEZVPZcj": {
+      "candidate": "Alice",
+      "timestamp": "2025-10-12T10:22:15.379101",
+      "voter_id": "5"
+    }
+  }
+}
