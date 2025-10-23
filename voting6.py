@@ -86,9 +86,9 @@ while True:  # Wait for sensor ready
 # Candidate setup
 # -----------------------------
 candidates = [  # List of candidates with details
-    {"name": "Alice", "image": "candidate1.jpg", "gpio": 17},  # Alice details, Physical Pin 11
-    {"name": "Bob", "image": "candidate2.jpg", "gpio": 27},    # Bob details, Physical Pin 13
-    {"name": "Charlie", "image": "candidate3.jpg", "gpio": 22} # Charlie details, Physical Pin 15
+    {"name": "Alice", "image": "candidate_alice.jpg", "gpio": 17},  # Alice details, Physical Pin 11
+    {"name": "Bob", "image": "candidate_bob.jpg", "gpio": 27},    # Bob details, Physical Pin 13
+    {"name": "Charlie", "image": "candidate_charlie.jpg", "gpio": 22} # Charlie details, Physical Pin 15
 ]
 
 # -----------------------------
@@ -96,7 +96,7 @@ candidates = [  # List of candidates with details
 # -----------------------------
 try:
     buttons = {c["name"]: Button(c["gpio"], pull_up=True, bounce_time=0.2) for c in candidates}  # Setup buttons
-    buzzer = Buzzer(18, active_high=True, initial_value=False)  # Setup buzzer on GPIO 18
+    buzzer = Buzzer(18, active_high=False, initial_value=False)  # Setup buzzer on GPIO 18, active low, Physical Pin 12
 except Exception as e:  # Handle GPIO errors
     print("❌ GPIO setup failed. Run with sudo")  # Error message
     print(e)  # Print exception
@@ -140,6 +140,7 @@ def show_fingerprint_screen():  # Function to show fingerprint screen
 
 def buzz_twice():  # Function to buzz twice for repeat voter
     """Buzz the buzzer twice for repeat voter."""
+    buzzer.off()  # Ensure buzzer is off initially
     for _ in range(2):  # Loop twice
         buzzer.on()  # Turn buzzer on
         time.sleep(1)  # Wait 1s
@@ -189,6 +190,11 @@ def wait_for_fingerprint():  # Function to wait for fingerprint
     check_response()  # Start checking
 
 def show_recognized_screen(voter_name):  # Function to show recognized screen
+    # Check again if voter already voted before showing candidate screen
+    if has_already_voted(last_voter_id):
+        print("❌ Already voted (double check in show_recognized_screen)")
+        show_already_voted_screen()
+        return
     for w in root.winfo_children():  # Clear widgets
         w.destroy()
     frame = Frame(root, bg="#E8F5E9")  # Success color frame

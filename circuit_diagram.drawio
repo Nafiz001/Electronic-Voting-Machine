@@ -1,0 +1,89 @@
+<mxfile host="Electron" modified="2025-10-23T12:00:00.000Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.7.5 Chrome/118.0.0.0 Electron/27.3.8 Safari/537.36" etag="abc123" version="24.7.5" type="device">
+  <diagram id="diagram1" name="Page-1">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <!-- Raspberry Pi -->
+        <mxCell id="2" value="Raspberry Pi 4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;" parent="1" vertex="1">
+          <mxGeometry x="100" y="100" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <!-- Arduino -->
+        <mxCell id="3" value="Arduino Uno" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCFFCC;strokeColor=#009900;" parent="1" vertex="1">
+          <mxGeometry x="300" y="100" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <!-- Fingerprint Sensor -->
+        <mxCell id="4" value="FPM10A&#10;Fingerprint Sensor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCCCFF;strokeColor=#0000FF;" parent="1" vertex="1">
+          <mxGeometry x="500" y="100" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <!-- Button Alice -->
+        <mxCell id="5" value="Button&#10;Alice&#10;(GPIO 17)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFCCCC;strokeColor=#FF0000;" parent="1" vertex="1">
+          <mxGeometry x="50" y="250" width="60" height="60" as="geometry"/>
+        </mxCell>
+        <!-- Button Bob -->
+        <mxCell id="6" value="Button&#10;Bob&#10;(GPIO 27)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFCCCC;strokeColor=#FF0000;" parent="1" vertex="1">
+          <mxGeometry x="150" y="250" width="60" height="60" as="geometry"/>
+        </mxCell>
+        <!-- Button Charlie -->
+        <mxCell id="7" value="Button&#10;Charlie&#10;(GPIO 22)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFCCCC;strokeColor=#FF0000;" parent="1" vertex="1">
+          <mxGeometry x="250" y="250" width="60" height="60" as="geometry"/>
+        </mxCell>
+        <!-- Buzzer -->
+        <mxCell id="8" value="Buzzer&#10;(GPIO 18)" style="shape=hexagon;whiteSpace=wrap;html=1;fillColor=#FFFFCC;strokeColor=#FFFF00;" parent="1" vertex="1">
+          <mxGeometry x="350" y="250" width="60" height="60" as="geometry"/>
+        </mxCell>
+        <!-- Display -->
+        <mxCell id="9" value="Display&#10;(HDMI)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6E6E6;strokeColor=#666666;" parent="1" vertex="1">
+          <mxGeometry x="100" y="350" width="120" height="80" as="geometry"/>
+        </mxCell>
+        <!-- Power Supply -->
+        <mxCell id="10" value="Power Supply&#10;(5V/3.3V)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFCCFF;strokeColor=#CC00CC;" parent="1" vertex="1">
+          <mxGeometry x="500" y="350" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <!-- Connections -->
+        <!-- Pi to Arduino USB -->
+        <mxCell id="11" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="2" target="3" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="-20" y="-10" as="sourcePoint"/>
+            <mxPoint x="30" y="-10" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <!-- Arduino to Fingerprint -->
+        <mxCell id="12" value="TX/RX" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="3" target="4" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="-20" y="-10" as="sourcePoint"/>
+            <mxPoint x="30" y="-10" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <!-- Pi to Button Alice -->
+        <mxCell id="13" value="GPIO 17" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="2" target="5" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Pi to Button Bob -->
+        <mxCell id="14" value="GPIO 27" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="2" target="6" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Pi to Button Charlie -->
+        <mxCell id="15" value="GPIO 22" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="2" target="7" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Pi to Buzzer -->
+        <mxCell id="16" value="GPIO 18" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="2" target="8" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Pi to Display -->
+        <mxCell id="17" value="HDMI" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="2" target="9" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Power to Pi -->
+        <mxCell id="18" value="5V/3.3V" style="endArrow=classic;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" parent="1" source="10" target="2" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Power to Arduino -->
+        <mxCell id="19" value="5V" style="endArrow=classic;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" parent="1" source="10" target="3" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
