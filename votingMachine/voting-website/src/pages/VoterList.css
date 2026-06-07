@@ -197,6 +197,14 @@
   background-color: #f7fafc;
 }
 
+.voter-table tbody tr.multiple-attempts {
+  background-color: #fee2e2;
+}
+
+.voter-table tbody tr.multiple-attempts:hover {
+  background-color: #fecaca;
+}
+
 .voter-table td {
   padding: 1rem;
   color: #4a5568;
@@ -230,4 +238,32 @@
 .status-badge.pending {
   background-color: #fef3c7;
   color: #92400e;
+}
+
+.attempts-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.8rem;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background-color: #e0e7ff;
+  color: #3730a3;
+  min-width: 2rem;
+}
+
+.attempts-badge.warning {
+  background-color: #dc2626;
+  color: white;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }

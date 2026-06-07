@@ -125,6 +125,7 @@ const VoterList = () => {
               <th>Name</th>
               <th>Age</th>
               <th>District</th>
+              <th>Vote Attempts</th>
               <th>Status</th>
               <th>Voted At</th>
             </tr>
@@ -132,24 +133,29 @@ const VoterList = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="6" className="loading-cell">
+                <td colSpan="7" className="loading-cell">
                   <RefreshCw className="spinning" size={20} />
                   Loading voters...
                 </td>
               </tr>
             ) : filteredVoters.length === 0 ? (
               <tr>
-                <td colSpan="6" className="no-data-cell">
+                <td colSpan="7" className="no-data-cell">
                   No voters found
                 </td>
               </tr>
             ) : (
               filteredVoters.map((voter) => (
-                <tr key={voter.id}>
+                <tr key={voter.id} className={voter.voteAttempts > 1 ? 'multiple-attempts' : ''}>
                   <td className="voter-id">{voter.id}</td>
                   <td className="voter-name">{voter.name}</td>
                   <td>-</td>
                   <td>-</td>
+                  <td>
+                    <span className={`attempts-badge ${voter.voteAttempts > 1 ? 'warning' : ''}`}>
+                      {voter.voteAttempts || 0}
+                    </span>
+                  </td>
                   <td>
                     <span className={`status-badge ${voter.hasVoted ? 'voted' : 'pending'}`}>
                       {voter.hasVoted ? (

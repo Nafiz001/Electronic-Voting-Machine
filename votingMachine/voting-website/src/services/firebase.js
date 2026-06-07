@@ -11,6 +11,8 @@ class FirebaseService {
       }
       const data = await response.json();
       
+      console.log('Raw voters data:', data);
+      
       if (!data) return [];
       
       // Handle both array and object formats
@@ -63,12 +65,43 @@ class FirebaseService {
     }
   }
 
+  // Get vote attempts
+  async getVoteAttempts() {
+    try {
+      const response = await fetch(`${FIREBASE_URL}/vote_attempts.json`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch vote attempts');
+      }
+      const data = await response.json();
+      
+      console.log('Raw vote_attempts data:', data);
+      
+      if (!data) return {};
+      
+      // Convert to a map of voter_id -> attempt count
+      const attemptMap = {};
+      Object.entries(data).forEach(([voterId, attemptData]) => {
+        if (attemptData && typeof attemptData === 'object') {
+          attemptMap[voterId] = attemptData.count || 0;
+        }
+      });
+      
+      console.log('Processed attemptMap:', attemptMap);
+      
+      return attemptMap;
+    } catch (error) {
+      console.error('Error fetching vote attempts:', error);
+      return {};
+    }
+  }
+
   // Get combined voter data with vote status
   async getVotersWithStatus() {
     try {
-      const [voters, votes] = await Promise.all([
+      const [voters, votes, voteAttempts] = await Promise.all([
         this.getVoters(),
-        this.getVotes()
+        this.getVotes(),
+        this.getVoteAttempts()
       ]);
 
       // Create a map of voted voter IDs with their vote details
@@ -83,11 +116,14 @@ class FirebaseService {
       // Update voters with voting status
       return voters.map(voter => {
         const voteInfo = votedVoters.get(voter.id);
+        const attempts = voteAttempts[voter.id] || 0;
+        console.log(`Voter ${voter.id} (${voter.name}): ${attempts} attempts`);
         return {
           ...voter,
           hasVoted: !!voteInfo,
           votedAt: voteInfo?.votedAt || null,
-          votedFor: voteInfo?.candidate || null
+          votedFor: voteInfo?.candidate || null,
+          voteAttempts: attempts
         };
       });
     } catch (error) {

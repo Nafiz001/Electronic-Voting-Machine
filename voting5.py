@@ -52,6 +52,30 @@ def has_already_voted(voter_id):  # Function to check if voter already voted
         print(f"❌ Error checking previous votes: {e}")  # Exception message
         return False  # Assume not voted
 
+def increment_vote_attempt(voter_id):  # Function to track vote attempts
+    """Increment the vote attempt count for a voter in Firebase."""
+    try:
+        # Get current attempt count
+        res = requests.get(f"{DB_URL}/vote_attempts/{voter_id}.json")  # GET attempt data
+        current_count = 0  # Default count
+        if res.status_code == 200 and res.json():  # If data exists
+            current_count = res.json().get("count", 0)  # Get current count
+        
+        # Increment and update
+        new_count = current_count + 1  # Increment count
+        payload = {  # Prepare data
+            "voter_id": voter_id,  # Voter ID
+            "count": new_count,  # New count
+            "last_attempt": datetime.utcnow().isoformat()  # Timestamp
+        }
+        response = requests.put(f"{DB_URL}/vote_attempts/{voter_id}.json", json=payload)  # PUT to Firebase
+        if response.status_code == 200:  # Check success
+            print(f"✅ Vote attempt {new_count} recorded for voter {voter_id}")  # Success message
+        else:
+            print(f"❌ Failed to record attempt: {response.text}")  # Error message
+    except Exception as e:  # Handle exceptions
+        print(f"❌ Exception while recording attempt {e}")  # Exception message
+
 # -----------------------------
 # Serial setup
 # -----------------------------
@@ -73,9 +97,9 @@ while True:  # Wait for sensor ready
 # Candidate setup
 # -----------------------------
 candidates = [  # List of candidates with details
-    {"name": "Alice", "image": "candidate1.jpg", "gpio": 17},  # Alice details
-    {"name": "Bob", "image": "candidate2.jpg", "gpio": 27},    # Bob details
-    {"name": "Charlie", "image": "candidate3.jpg", "gpio": 22} # Charlie details
+    {"name": "Alice", "image": "candidate_alice.jpg", "gpio": 17},  # Alice details
+    {"name": "Bob", "image": "candidate_bob.jpg", "gpio": 27},    # Bob details
+    {"name": "Charlie", "image": "candidate_charlie.jpg", "gpio": 22} # Charlie details
 ]
 
 # -----------------------------
@@ -160,6 +184,7 @@ def wait_for_fingerprint():  # Function to wait for fingerprint
                     print(f"Fingerprint matched: {last_voter_id} ({last_voter_name})")  # Log
                     if has_already_voted(last_voter_id):  # Check if already voted
                         print("❌ Already voted")  # Log
+                        increment_vote_attempt(last_voter_id)  # Track attempt
                         show_already_voted_screen()  # Show warning
                         return  # Exit
                     show_recognized_screen(last_voter_name)  # Show recognized
