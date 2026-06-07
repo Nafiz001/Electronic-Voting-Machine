@@ -8,9 +8,9 @@ A biometric Electronic Voting Machine built on a **Raspberry Pi**, an **Arduino 
 
 ## 🎥 Demo
 
-<video src="https://raw.githubusercontent.com/Nafiz001/Electronic-Voting-Machine/main/docs/evm_video.mp4" controls width="600"></video>
+<video src="https://res.cloudinary.com/dvvbtopri/video/upload/v1780869198/evm_video_tg23uf.mp4" controls width="600"></video>
 
-> If the player doesn't load, [watch the demo video directly](docs/evm_video.mp4).
+> If the player doesn't load, [watch the demo video here](https://res.cloudinary.com/dvvbtopri/video/upload/v1780869198/evm_video_tg23uf.mp4).
 
 ---
 
